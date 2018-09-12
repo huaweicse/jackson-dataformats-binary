@@ -1862,4 +1862,13 @@ public class ProtobufGenerator extends GeneratorBase
         // should we ever get this?
         throw new IllegalArgumentException("Illegal character point (0x"+Integer.toHexString(code)+") to output");
     }
+
+    public void setCurrentField(ProtobufField field) {
+         _pbContext.setField(field);
+        _currField = field;
+    }
+
+    public ProtobufField getCurrField() {
+        return _currField;
+    }
 }
