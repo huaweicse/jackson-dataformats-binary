@@ -4,6 +4,9 @@ import java.util.*;
 
 import com.fasterxml.jackson.core.util.InternCache;
 import com.squareup.protoparser.*;
+import com.squareup.protoparser.DataType.MapType;
+import com.squareup.protoparser.FieldElement.Label;
+import com.squareup.protoparser.OptionElement.Kind;
 
 /**
  * Stateful class needed to properly resolve type definitions of
@@ -145,7 +148,10 @@ public class TypeResolver
                         }
                     }
                 }
-            } else {
+            } else if (fieldType instanceof MapType){
+                pbf = createMapProtobufField(f, (MapType) fieldType);
+            }
+            else {
                 throw new IllegalArgumentException(String.format(
                         "Unrecognized DataType '%s' for field '%s'", fieldType.getClass().getName(), f.name()));
             }
@@ -162,7 +168,30 @@ public class TypeResolver
         }
         message.init(first);
         return message;
-    }    
+    }
+
+    @SuppressWarnings("PackageAccessibility")
+    private ProtobufField createMapProtobufField(FieldElement fieldElement, MapType fieldType) {
+        FieldElement keyFieldElement =FieldElement.builder()
+            .label(Label.OPTIONAL)
+            .name("key")
+            .type(fieldType.keyType())
+            .tag(1)
+            .build();
+        FieldElement valueFieldElement =FieldElement.builder()
+            .label(Label.OPTIONAL)
+            .name("value")
+            .type(fieldType.valueType())
+            .tag(2)
+            .build();
+        MessageElement messageElement = MessageElement.builder()
+            .addField(keyFieldElement)
+            .addField(valueFieldElement)
+            .name("entry")
+            .build();
+        ProtobufMessage protobufMessage = _resolve(messageElement);
+        return new ProtobufField(fieldElement, FieldType.MAP, protobufMessage);
+    }
 
     private ProtobufMessage _findResolvedMessage(String typeStr)
     {
