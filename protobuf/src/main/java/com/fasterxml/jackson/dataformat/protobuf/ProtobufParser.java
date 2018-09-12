@@ -891,6 +891,7 @@ public class ProtobufParser extends ParserMinimalBase
             break;
 
         case MESSAGE:
+        case MAP:
             {
                 ProtobufMessage msg = _currentField.getMessageType();
                 _currentMessage = msg;
@@ -2530,5 +2531,9 @@ public class ProtobufParser extends ParserMinimalBase
             _throwInvalidSpace(c);
         }
         _reportInvalidInitial(c);
+    }
+
+    public ProtobufField getCurrentField() {
+        return _currentField;
     }
 }
