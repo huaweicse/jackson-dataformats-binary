@@ -3,6 +3,7 @@ package com.fasterxml.jackson.dataformat.protobuf.schema;
 import java.util.*;
 
 import com.fasterxml.jackson.core.SerializableString;
+import com.squareup.protoparser.DataType;
 import com.squareup.protoparser.FieldElement;
 import com.squareup.protoparser.OptionElement;
 
@@ -65,6 +66,10 @@ public class ProtobufField
         this(nativeField, FieldType.MESSAGE, msg, null);
     }
 
+    public ProtobufField(FieldElement nativeField, FieldType type, ProtobufMessage msg) {
+        this(nativeField, type, msg, null);
+    }
+
     public ProtobufField(FieldElement nativeField, ProtobufEnum et) {
         this(nativeField, FieldType.ENUM, null, et);
     }
@@ -105,7 +110,12 @@ public class ProtobufField
                 repeated = false;
                 break;
             default:
-                required = repeated = false;
+                if (nativeField.type() instanceof DataType.MapType){
+                    required = false;
+                    repeated = true;
+                } else {
+                    required = repeated = false;
+                }
                 break;
             }
             /* 08-Apr-2015, tatu: Due to [https://github.com/square/protoparser/issues/90]
@@ -123,7 +133,7 @@ public class ProtobufField
             }
         
         }
-        isObject = (type == FieldType.MESSAGE);
+        isObject = (type == FieldType.MESSAGE) || (type == FieldType.MAP);
     }
 
     private static boolean _findBooleanOption(FieldElement f, String key)
