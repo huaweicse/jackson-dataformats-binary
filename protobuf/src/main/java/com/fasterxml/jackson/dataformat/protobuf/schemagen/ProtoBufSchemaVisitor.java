@@ -5,10 +5,14 @@ import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonParser.NumberType;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsonFormatVisitors.*;
 
 import com.squareup.protoparser.DataType;
+import com.squareup.protoparser.DataType.MapType;
+import com.squareup.protoparser.DataType.NamedType;
+import com.squareup.protoparser.MessageElement;
 import com.squareup.protoparser.TypeElement;
 import com.squareup.protoparser.DataType.ScalarType;
 
@@ -89,11 +93,33 @@ public class ProtoBufSchemaVisitor extends JsonFormatVisitorWrapper.Base
 		return visitor;
 	}
 
+	class ProtobufMapFormatVisitor extends JsonMapFormatVisitor.Base {
+    private JavaType mapType;
+    public ProtobufMapFormatVisitor(JavaType mapType) {
+      this.mapType = mapType;
+    }
+
+    protected DataType findDataType(JavaType type) throws JsonMappingException {
+      DataType dataType = ProtobufSchemaHelper.getScalarType(type);
+      if (dataType != null) {
+        return dataType;
+      }
+
+      MessageElementVisitor visitor = new MessageElementVisitor(ProtoBufSchemaVisitor.this._provider, type, _definedTypeElementBuilders, _isNested);
+      return visitor.getDataType(type);
+    }
+
+    @Override
+    public void valueFormat(JsonFormatVisitable handler, JavaType valueType) throws JsonMappingException {
+      _simpleType = MapType.create(findDataType(mapType.getKeyType()), findDataType(mapType.getContentType()));
+    }
+  }
+
 	@Override
 	public JsonMapFormatVisitor expectMapFormat(JavaType mapType) {
          // 31-Mar-2017, tatu: I don't think protobuf v2 really supports map types natively,
 	    //   and we can't quite assume anything specific can we?
-		return _throwUnsupported("'Map' type not supported as type by protobuf module");
+        return new ProtobufMapFormatVisitor(mapType);
 	}
 
 	@Override
